@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habnet Staff Sohbet Uygulaması</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --habnet-blue: #1E88E5;
+            --habnet-dark-blue: #0D47A1;
+            --habnet-green: #43A047;
+            --habnet-purple: #8E24AA;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7f9;
+        }
+        
+        .habnet-bg-blue {
+            background-color: var(--habnet-blue);
+        }
+        
+        .habnet-bg-dark-blue {
+            background-color: var(--habnet-dark-blue);
+        }
+        
+        .habnet-bg-green {
+            background-color: var(--habnet-green);
+        }
+        
+        .habnet-text-blue {
+            color: var(--habnet-blue);
+        }
+        
+        .channel-category {
+            background-color: #e3f2fd;
+            border-left: 4px solid var(--habnet-blue);
+        }
+        
+        .online-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .online {
+            background-color: #4CAF50;
+        }
+        
+        .away {
+            background-color: #FFC107;
+        }
+        
+        .busy {
+            background-color: #F44336;
+        }
+        
+        .offline {
+            background-color: #9E9E9E;
+        }
+        
+        .message-self {
+            background-color: #e3f2fd;
+            border-radius: 18px 18px 0 18px;
+        }
+        
+        .message-other {
+            background-color: #ffffff;
+            border-radius: 18px 18px 18px 0;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .chat-container {
+            height: calc(100vh - 130px);
+        }
+        
+        .pinned-message {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffd54f;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                z-index: 50;
+                transition: left 0.3s ease;
+                height: 100vh;
+                top: 0;
+                width: 80%;
+            }
+            
+            .sidebar.active {
+                left: 0;
+            }
+            
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 40;
+            }
+            
+            .overlay.active {
+                display: block;
+            }
+        }
+
+        .login-container {
+            background: linear-gradient(135deg, var(--habnet-blue) 0%, var(--habnet-dark-blue) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-form {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+        }
+
+        .admin-panel {
+            display: none;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            margin: 2rem auto;
+        }
+        
+        .avatar-upload {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+        
+        .avatar-upload input {
+            display: none;
+        }
+        
+        .avatar-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #e0e0e0;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .context-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        
+        .context-menu-item:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Giriş Sayfası (İlk görüntülenecek) -->
+    <div id="loginPage" class="login-container">
+        <div class="login-form">
+            <div class="text-center mb-6">
+                <div class="flex justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1E88E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 12h8M8 16h8M21 5a3 3 0 0 1-3 3h-1a3 3 0 0 1-3-3V5a4 4 0 1 1 8 0v1a3 3 0 0 1-3 3h-1a3 3 0 0 1-3 3v1a4 4 0 1 1 8 0v1a3 3 0 0 1-3 3h-1a3 3 0 0 1-3 3"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mt-2">Habnet Staff Girişi</h2>
+                <p class="text-gray-600">Yetkili personel hesabınızla giriş yapın</p>
+            </div>
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label for="username" class="block text-gray-700 text-sm font-medium mb-2">Kullanıcı Adı</label>
+                    <input type="text" id="username" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-gray-700 text-sm font-medium mb-2">Şifre</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    Giriş Yap
+                </button>
+            </form>
+            <p class="text-center text-gray-500 text-xs mt-4">
+                Sadece yetkili personel erişim sağlayabilir.
+            </p>
+        </div>
+    </div>
+
+    <!-- Yönetici Panel Sayfası (Sadece admin görebilir) -->
+    <div id="adminPanel" class="admin-panel">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Yönetici Kontrol Paneli</h2>
+            <button id="backToAppFromAdmin" class="text-blue-500 hover:text-blue-700">
+                <i class="fas fa-arrow-left mr-1"></i> Uygulamaya Dön
+            </button>
+        </div>
+        
+        <div class="bg-gray-100 p-4 rounded-lg mb-6">
+            <h3 class="text-lg font-semibold mb-3">Yeni Personel Ekle</h3>
+            <form id="addStaffForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="staffUsername" class="block text-gray-700 text-sm font-medium mb-2">Kullanıcı Adı</label>
+                    <input type="text" id="staffUsername" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label for="staffPassword" class="block text-gray-700 text-sm font-medium mb-2">Şifre</label>
+                    <input type="password" id="staffPassword" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label for="staffRank" class="block text-gray-700 text-sm font-medium mb-2">Rütbe</label>
+                    <select id="staffRank" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="Support">Destek Ekibi</option>
+                        <option value="Mod">Moderatör</option>
+                        <option value="Admin">Yönetici</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                        Personel Ekle
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div>
+            <h3 class="text-lg font-semibold mb-3">Personel Listesi</h3>
+            <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kullanıcı Adı</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rütbe</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffList" class="bg-white divide-y divide-gray-200">
+                        <!-- Personel listesi JavaScript ile doldurulacak -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ana Uygulama (Giriş yapınca görünecek) -->
+    <div id="mainApp" style="display: none;">
+        <!-- Navbar -->
+        <nav class="bg-white shadow-md py-3 px-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <button id="menuToggle" class="md:hidden mr-3 text-gray-600">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1E88E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 12h8M8 16h8M21 5a3 3 0 0 1-3 3h-1a3 3 0 0 1-3-3V5a4 4 0 1 1 8 0v1a3 3 0 0 1-3 3h-1a3 3 0 0 1-3 3v1a4 4 0 1 1 8 0v1a3 3 0 0 1-3 3h-1a3 3 0 0 1-3 3"></path>
+                    </svg>
+                    <span class="ml-2 font-bold text-xl text-blue-600">Habnet Staff</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center">
+                <div class="relative mr-4">
+                    <input type="text" placeholder="Ara..." class="py-1 px-3 rounded-full border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <div class="relative">
+                    <button class="bg-gray-200 rounded-full p-1">
+                        <i class="fas fa-bell text-gray-600"></i>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs h-4 w-4 flex items-center justify-center">3</span>
+                    </button>
+                </div>
+                <div class="ml-4">
+                    <div class="flex items-center">
+                        <div class="avatar-upload" id="avatarUpload">
+                            <div class="avatar-preview" id="avatarPreview">
+                                <img id="avatarImage" src="" alt="Avatar">
+                                <div id="avatarPlaceholder" class="text-gray-400">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            </div>
+                            <input type="file" id="avatarInput" accept="image/*">
+                        </div>
+                        <span class="ml-2 text-sm font-medium" id="currentUserDisplay"></span>
+                        <button id="logoutBtn" class="ml-2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                        <button id="adminPanelBtn" class="ml-2 text-gray-500 hover:text-gray-700" style="display: none;">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="flex">
+            <!-- Overlay for mobile -->
+            <div class="overlay" id="overlay"></div>
+            
+            <!-- Sidebar -->
+            <div class="sidebar bg-white w-64 shadow-md md:shadow-none pt-4 px-4 md:block overflow-y-auto" id="sidebar">
+                <!-- Online Staff -->
+                <div class="mb-6">
+                    <h3 class="font-bold text-gray-600 text-xs uppercase mb-2">Çevrimiçi Personel</h3>
+                    <div id="onlineStaffList" class="space-y-2">
+                        <!-- JavaScript ile doldurulacak -->
+                    </div>
+                </div>
+                
+                <!-- Channels -->
+                <div>
+                    <h3 class="font-bold text-gray-600 text-xs uppercase mb-2">Kanallar</h3>
+                    
+                    <!-- Moderation Category -->
+                    <div class="channel-category px-2 py-1 mb-1">
+                        <h4 class="font-semibold text-sm">Moderasyon</h4>
+                    </div>
+                    <div class="space-y-1 mb-3">
+                        <div class="flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer bg-blue-50 channel-btn" data-channel="genel-moderasyon">
+                            <i class="fas fa-shield-alt text-blue-500 mr-2"></i>
+                            <span class="text-sm">Genel Moderasyon</span>
+                        </div>
+                        <div class="flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer channel-btn" data-channel="yasaklamalar">
+                            <i class="fas fa-ban text-red-500 mr-2"></i>
+                            <span class="text-sm">Yasaklamalar</span>
+                        </div>
+                        <div class="flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer channel-btn" data-channel="uyarilar">
+                            <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
+                            <span class="text-sm">Uyarılar</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Events Category -->
+                    <div class="channel-category px-2 py-1 mb-1">
+                        <h4 class="font-semibold text-sm">Etkinlikler</h4>
+                    </div>
+                    <div class="space-y-1 mb-3">
+                        <div class="flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer channel-btn" data-channel="etkinlik-planlama">
+                            <i class="fas fa-calendar-alt text-purple-500 mr-2"></i>
+                            <span class="text-sm">Etkinlik Planlama</span>
+                        </div>
+                        <div class="flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer channel-btn" data-channel="yarismalar">
+                            <i class="fas fa-trophy text-amber-500 mr-2"></i>
+                            <span class="text-sm">Yarışmalar</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Support Category -->
+                    <div class="channel-category px-2 py-1 mb-1">
+                        <h4 class="font-semibold text-sm">Destek</h4>
+                    </div>
+                    <div class="space-y-1 mb-3">
+                        <div class="flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer channel-btn" data-channel="teknik-destek">
+                            <i class="fas fa-question-circle text-green-500 mr-2"></i>
+                            <span class="text-sm">Teknik Destek</span>
+                        </div>
+                        <div class="flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer channel-btn" data-channel="kullanici-destek">
+                            <i class="fas fa-hands-helping text-teal-500 mr-2"></i>
+                            <span class="text-sm">Kullanıcı Destek</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tasks -->
+                <div class="mt-6">
+                    <h3 class="font-bold text-gray-600 text-xs uppercase mb-2">Görevlerim</h3>
+                    <div id="userTasks" class="space-y-2">
+                        <!-- JavaScript ile doldurulacak -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="flex-1 flex flex-col">
+                <!-- Chat Header -->
+                <div class="bg-white px-6 py-3 shadow-sm flex justify-between items-center">
+                    <div>
+                        <h2 class="font-bold text-lg" id="currentChannel">Genel Moderasyon</h2>
+                        <p class="text-xs text-gray-500"><span id="onlineCount">0</span> çevrimiçi üye</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button class="p-2 rounded-full hover:bg-gray-100">
+                            <i class="fas fa-pin text-gray-500"></i>
+                        </button>
+                        <button class="p-2 rounded-full hover:bg-gray-100">
+                            <i class="fas fa-bell text-gray-500"></i>
+                        </button>
+                        <button class="p-2 rounded-full hover:bg-gray-100">
+                            <i class="fas fa-users text-gray-500"></i>
+                        </button>
+                        <button class="p-2 rounded-full hover:bg-gray-100">
+                            <i class="fas fa-ellipsis-h text-gray-500"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Container -->
+                <div class="chat-container overflow-y-auto p-4 bg-gray-50 flex flex-col" id="chatMessages">
+                    <!-- Mesajlar JavaScript ile eklenecek -->
+                </div>
+
+                <!-- Message Input -->
+                <div class="bg-white px-4 py-3 border-t border-gray-200">
+                    <div class="flex items-center">
+                        <button class="p-2 text-gray-500 hover:text-gray-700">
+                            <i class="far fa-smile"></i>
+                        </button>
+                        <button class="p-2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <input type="text" id="messageInput" placeholder="Mesaj yazın..." class="flex-1 border border-gray-300 rounded-full py-2 px-4 mx-2 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        <button id="sendMessageBtn" class="bg-blue-500 text-white rounded-full p-2 hover:bg-blue-600">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="contextMenu" class="context-menu">
+        <div class="context-menu-item" id="pinMessage">Mesajı Sabitle</div>
+        <div class="context-menu-item" id="deleteMessage">Mesajı Sil</div>
+    </div>
+
+    <script>
+        // Uygulama durumu
+        const appState = {
+            currentUser: null,
+            users: [],
+            channels: [
+                'genel-moderasyon', 'yasaklamalar', 'uyarilar', 
+                'etkinlik-planlama', 'yarismalar', 'teknik-destek', 'kullanici-destek'
+            ],
+            currentChannel: 'genel-moderasyon',
+            messages: {},
+            pinnedMessages: {},
+            onlineUsers: [],
+            lastMessageId: 0
+        };
+
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', function() {
+            // Yerel depolamadan kullanıcıları yükle
+            loadUsersFromStorage();
+            
+            // Eğer localStorage'da oturum açık kalmışsa
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                try {
+                    appState.currentUser = JSON.parse(savedUser);
+                    showMainApp();
+                } catch (e) {
+                    localStorage.removeItem('currentUser');
+                    showLoginPage();
+                }
+            } else {
+                showLoginPage();
+            }
+            
+            // Mesajları yükle
+            loadMessagesFromStorage();
+            
+            // Event listener'ları ayarla
+            setupEventListeners();
+        });
+
+        // Event listener'ları ayarla
+        function setupEventListeners() {
+            // Giriş formu
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            // Çıkış butonu
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+            
+            // Yönetici paneli butonu
+            document.getElementById('adminPanelBtn').addEventListener('click', showAdminPanel);
+            
+            // Yönetici panelinden uygulamaya dönüş
+            document.getElementById('backToAppFromAdmin').addEventListener('click', showMainApp);
+            
+            // Personel ekleme formu
+            document.getElementById('addStaffForm').addEventListener('submit', handleAddStaff);
+            
+            // Mobil menü toggle
+            document.getElementById('menuToggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.getElementById('overlay').classList.toggle('active');
+            });
+            
+            // Overlay için kapatma
+            document.getElementById('overlay').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.remove('active');
+                this.classList.remove('active');
+            });
+            
+            // Kanal değiştirme
+            document.querySelectorAll('.channel-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const channel = this.getAttribute('data-channel');
+                    changeChannel(channel);
+                });
+            });
+            
+            // Mesaj gönderme
+            document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
+            document.getElementById('messageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // Avatar yükleme
+            document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload);
+            document.getElementById('avatarUpload').addEventListener('click', function() {
+                document.getElementById('avatarInput').click();
+            });
+            
+            // Context menu için
+            document.addEventListener('click', function() {
+                document.getElementById('contextMenu').style.display = 'none';
+            });
+            
+            // Sağ tık menüsü
+            document.getElementById('chatMessages').addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                const messageElement = e.target.closest('.message-item');
+                if (messageElement && (appState.currentUser.rank === 'Admin' || appState.currentUser.rank === 'Mod')) {
+                    const messageId = messageElement.getAttribute('data-message-id');
+                    const contextMenu = document.getElementById('contextMenu');
+                    contextMenu.style.display = 'block';
+                    contextMenu.style.left = e.pageX + 'px';
+                    contextMenu.style.top = e.pageY + 'px';
+                    
+                    // Context menu item'larını ayarla
+                    document.getElementById('pinMessage').onclick = function() {
+                        togglePinMessage(messageId);
+                    };
+                    
+                    document.getElementById('deleteMessage').onclick = function() {
+                        deleteMessage(messageId);
+                    };
+                }
+            });
+        }
+
+        // Kullanıcıları yerel depolamadan yükle
+        function loadUsersFromStorage() {
+            const storedUsers = localStorage.getItem('habnetStaffUsers');
+            if (storedUsers) {
+                appState.users = JSON.parse(storedUsers);
+            } else {
+                // Varsayılan admin kullanıcısı (ilk kurulum için)
+                const defaultAdmin = {
+                    id: 1,
+                    username: 'Avatar',
+                    password: 'Test123',
+                    rank: 'Admin',
+                    joinDate: new Date().toISOString(),
+                    avatar: null
+                };
+                appState.users = [defaultAdmin];
+                saveUsersToStorage();
+            }
+        }
+
+        // Mesajları yerel depolamadan yükle
+        function loadMessagesFromStorage() {
+            const storedMessages = localStorage.getItem('habnetStaffMessages');
+            const storedPinnedMessages = localStorage.getItem('habnetPinnedMessages');
+            const storedLastMessageId = localStorage.getItem('habnetLastMessageId');
+            
+            if (storedMessages) {
+                appState.messages = JSON.parse(storedMessages);
+            }
+            
+            if (storedPinnedMessages) {
+                appState.pinnedMessages = JSON.parse(storedPinnedMessages);
+            }
+            
+            if (storedLastMessageId) {
+                appState.lastMessageId = parseInt(storedLastMessageId);
+            }
+        }
+
+        // Kullanıcıları yerel depolamaya kaydet
+        function saveUsersToStorage() {
+            localStorage.setItem('habnetStaffUsers', JSON.stringify(appState.users));
+        }
+
+        // Mesajları yerel depolamaya kaydet
+        function saveMessagesToStorage() {
+            localStorage.setItem('habnetStaffMessages', JSON.stringify(appState.messages));
+            localStorage.setItem('habnetPinnedMessages', JSON.stringify(appState.pinnedMessages));
+            localStorage.setItem('habnetLastMessageId', appState.lastMessageId.toString());
+        }
+
+        // Giriş sayfasını göster
+        function showLoginPage() {
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'none';
+            appState.currentUser = null;
+            localStorage.removeItem('currentUser');
+        }
+
+        // Ana uygulamayı göster
+        function showMainApp() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            
+            // Kullanıcı bilgilerini güncelle
+            document.getElementById('currentUserDisplay').textContent = 
+                `${appState.currentUser.username} (${appState.currentUser.rank})`;
+            
+            // Avatarı yükle
+            loadAvatar();
+            
+            // Eğer adminse yönetici paneli butonunu göster
+            if (appState.currentUser.rank === 'Admin') {
+                document.getElementById('adminPanelBtn').style.display = 'block';
+            } else {
+                document.getElementById('adminPanelBtn').style.display = 'none';
+            }
+            
+            // Çevrimiçi kullanıcı listesini güncelle
+            updateOnlineUsers();
+            
+            // Görevleri yükle
+            loadUserTasks();
+            
+            // Mevcut kanalı yükle
+            loadChannel(appState.currentChannel);
+        }
+
+        // Avatar yükle
+        function loadAvatar() {
+            const avatarImage = document.getElementById('avatarImage');
+            const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+            
+            if (appState.currentUser.avatar) {
+                avatarImage.src = appState.currentUser.avatar;
+                avatarImage.style.display = 'block';
+                avatarPlaceholder.style.display = 'none';
+            } else {
+                avatarImage.style.display = 'none';
+                avatarPlaceholder.style.display = 'flex';
+            }
+        }
+
+        // Avatar yükleme işlemi
+        function handleAvatarUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    appState.currentUser.avatar = event.target.result;
+                    
+                    // Kullanıcıyı güncelle
+                    const userIndex = appState.users.findIndex(u => u.id === appState.currentUser.id);
+                    if (userIndex !== -1) {
+                        appState.users[userIndex].avatar = event.target.result;
+                        saveUsersToStorage();
+                    }
+                    
+                    localStorage.setItem('currentUser', JSON.stringify(appState.currentUser));
+                    loadAvatar();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Yönetici panelini göster
+        function showAdminPanel() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            
+            // Personel listesini güncelle
+            updateStaffList();
+        }
+
+        // Giriş işlemini yönet
+        function handleLogin(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Kullanıcıyı doğrula
+            const user = appState.users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                appState.currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                showMainApp();
+                
+                // Başarılı giriş bildirimi
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Hoş geldiniz!',
+                    text: `Başarıyla giriş yaptınız: ${user.rank} ${user.username}`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                // Hatalı giriş bildirimi
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Giriş Başarısız',
+                    text: 'Kullanıcı adı veya şifre hatalı!',
+                });
+            }
+        }
+
+        // Çıkış işlemini yönet
+        function handleLogout() {
+            // Çevrimiçi kullanıcılardan çıkar
+            const index = appState.onlineUsers.indexOf(appState.currentUser.username);
+            if (index > -1) {
+                appState.onlineUsers.splice(index, 1);
+                localStorage.setItem('onlineUsers', JSON.stringify(appState.onlineUsers));
+            }
+            
+            showLoginPage();
+            
+            // Başarılı çıkış bildirimi
+            Swal.fire({
+                icon: 'success',
+                title: 'Çıkış Yapıldı',
+                text: 'Güvenli çıkış yapıldı.',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+
+        // Personel ekleme işlemi
+        function handleAddStaff(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('staffUsername').value;
+            const password = document.getElementById('staffPassword').value;
+            const rank = document.getElementById('staffRank').value;
+            
+            // Kullanıcı adı zaten var mı kontrol et
+            if (appState.users.some(u => u.username === username)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Hata',
+                    text: 'Bu kullanıcı adı zaten mevcut!',
+                });
+                return;
+            }
+            
+            // Yeni personel ekle
+            const newStaff = {
+                id: appState.users.length > 0 ? Math.max(...appState.users.map(u => u.id)) + 1 : 1,
+                username,
+                password,
+                rank,
+                joinDate: new Date().toISOString(),
+                avatar: null
+            };
+            
+            appState.users.push(newStaff);
+            saveUsersToStorage();
+            
+            // Formu temizle
+            document.getElementById('addStaffForm').reset();
+            
+            // Personel listesini güncelle
+            updateStaffList();
+            
+            // Başarılı ekleme bildirimi
+            Swal.fire({
+                icon: 'success',
+                title: 'Personel Eklendi',
+                text: `${rank} ${username} başarıyla eklendi.`,
+            });
+        }
+
+        // Personel listesini güncelle
+        function updateStaffList() {
+            const staffList = document.getElementById('staffList');
+            staffList.innerHTML = '';
+            
+            appState.users.forEach(user => {
+                const row = document.createElement('tr');
+                
+                // Durum belirleme
+                const isOnline = appState.onlineUsers.includes(user.username);
+                const status = isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
+                const statusClass = isOnline ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="text-sm font-medium text-gray-900">${user.username}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${user.rank}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${user.rank !== 'Admin' ? `
+                        <button class="text-red-600 hover:text-red-900 delete-user" data-username="${user.username}">
+                            Sil
+                        </button>
+                        ` : 'Yönetici silinemez'}
+                    </td>
+                `;
+                
+                staffList.appendChild(row);
+            });
+            
+            // Silme butonlarına event listener ekle
+            document.querySelectorAll('.delete-user').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const username = this.getAttribute('data-username');
+                    deleteUser(username);
+                });
+            });
+        }
+
+        // Kullanıcı silme
+        function deleteUser(username) {
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: `${username} kullanıcısını silmek istediğinize emin misiniz?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Evet, sil!',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Kullanıcıyı sil
+                    appState.users = appState.users.filter(u => u.username !== username);
+                    saveUsersToStorage();
+                    updateStaffList();
+                    
+                    Swal.fire(
+                        'Silindi!',
+                        'Kullanıcı başarıyla silindi.',
+                        'success'
+                    );
+                }
+            });
+        }
+
+        // Çevrimiçi kullanıcı listesini güncelle
+        function updateOnlineUsers() {
+            // Mevcut kullanıcıyı çevrimiçi listesine ekle (eğer yoksa)
+            if (!appState.onlineUsers.includes(appState.currentUser.username)) {
+                appState.onlineUsers.push(appState.currentUser.username);
+                localStorage.setItem('onlineUsers', JSON.stringify(appState.onlineUsers));
+            }
+            
+            // Yerel depolamadan çevrimiçi kullanıcıları yükle
+            const storedOnlineUsers = localStorage.getItem('onlineUsers');
+            if (storedOnlineUsers) {
+                appState.onlineUsers = JSON.parse(storedOnlineUsers);
+            }
+            
+            const onlineList = document.getElementById('onlineStaffList');
+            onlineList.innerHTML = '';
+            
+            // Çevrimiçi kullanıcıları listele
+            appState.users.forEach(user => {
+                if (appState.onlineUsers.includes(user.username)) {
+                    const statusColor = user.rank === 'Admin' ? 'busy' : 
+                                      user.rank === 'Mod' ? 'online' : 'away';
+                    
+                    const userElement = document.createElement('div');
+                    userElement.className = 'flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer';
+                    userElement.innerHTML = `
+                        <div class="relative">
+                            <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                                ${user.avatar ? 
+                                    `<img src="${user.avatar}" class="w-full h-full object-cover">` : 
+                                    `<i class="fas fa-user text-gray-400 text-xs"></i>`
+                                }
+                            </div>
+                            <span class="online-status ${statusColor} absolute bottom-0 right-0"></span>
+                        </div>
+                        <span class="ml-2 text-sm">${user.username} (${user.rank})</span>
+                    `;
+                    
+                    onlineList.appendChild(userElement);
+                }
+            });
+            
+            // Çevrimiçi sayısını güncelle
+            document.getElementById('onlineCount').textContent = appState.onlineUsers.length;
+        }
+
+        // Kanal değiştirme
+        function changeChannel(channel) {
+            appState.currentChannel = channel;
+            loadChannel(channel);
+            
+            // Kanal başlığını güncelle
+            const channelNames = {
+                'genel-moderasyon': 'Genel Moderasyon',
+                'yasaklamalar': 'Yasaklamalar',
+                'uyarilar': 'Uyarılar',
+                'etkinlik-planlama': 'Etkinlik Planlama',
+                'yarismalar': 'Yarışmalar',
+                'teknik-destek': 'Teknik Destek',
+                'kullanici-destek': 'Kullanıcı Destek'
+            };
+            
+            document.getElementById('currentChannel').textContent = channelNames[channel] || channel;
+        }
+
+        // Kanal yükleme
+        function loadChannel(channel) {
+            const chatContainer = document.getElementById('chatMessages');
+            chatContainer.innerHTML = '';
+            
+            // Tarih ayırıcı ekle
+            const dateSeparator = document.createElement('div');
+            dateSeparator.className = 'flex items-center my-4';
+            dateSeparator.innerHTML = `
+                <div class="flex-grow border-t border-gray-200"></div>
+                <span class="mx-4 text-xs text-gray-500 font-medium">Bugün</span>
+                <div class="flex-grow border-t border-gray-200"></div>
+            `;
+            chatContainer.appendChild(dateSeparator);
+            
+            // Sabitlenmiş mesajları göster
+            if (appState.pinnedMessages[channel] && appState.pinnedMessages[channel].length > 0) {
+                appState.pinnedMessages[channel].forEach(msg => {
+                    addPinnedMessageToChat(msg);
+                });
+            }
+            
+            // Kanal mesajlarını yükle
+            if (appState.messages[channel]) {
+                appState.messages[channel].forEach(msg => {
+                    // Sabitlenmiş mesajları atla (zaten gösterildi)
+                    if (msg.pinned) return;
+                    
+                    const isSelf = msg.user === appState.currentUser.username;
+                    addMessageToChat(msg, isSelf);
+                });
+            }
+            
+            // En son mesaja kaydır
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Sabitlenmiş mesaj ekle
+        function addPinnedMessageToChat(message) {
+            const chatContainer = document.getElementById('chatMessages');
+            
+            const pinnedElement = document.createElement('div');
+            pinnedElement.className = 'pinned-message p-3 rounded-r mb-3';
+            pinnedElement.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center">
+                        <i class="fas fa-thumbtack text-yellow-500 mr-2"></i>
+                        <span class="text-sm font-medium">Sabitlenmiş Mesaj</span>
+                    </div>
+                    ${appState.currentUser.rank === 'Admin' || appState.currentUser.rank === 'Mod' ? `
+                    <button class="text-gray-400 hover:text-gray-600 unpin-btn" data-message-id="${message.id}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    ` : ''}
+                </div>
+                <div class="flex items-start mt-2">
+                    <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mr-2">
+                        ${getUserAvatar(message.user)}
+                    </div>
+                    <div>
+                        <div class="flex items-baseline">
+                            <span class="font-medium text-sm">${message.user}</span>
+                            <span class="text-xs text-gray-500 ml-2">${message.time}</span>
+                        </div>
+                        <p class="text-sm mt-1">${message.text}</p>
+                    </div>
+                </div>
+            `;
+            
+            chatContainer.appendChild(pinnedElement);
+            
+            // Sabitlenmiş mesajı kaldırma butonu
+            if (appState.currentUser.rank === 'Admin' || appState.currentUser.rank === 'Mod') {
+                const unpinBtn = pinnedElement.querySelector('.unpin-btn');
+                unpinBtn.addEventListener('click', function() {
+                    const messageId = this.getAttribute('data-message-id');
+                    togglePinMessage(messageId);
+                });
+            }
+        }
+
+        // Kullanıcı avatarını al
+        function getUserAvatar(username) {
+            const user = appState.users.find(u => u.username === username);
+            if (user && user.avatar) {
+                return `<img src="${user.avatar}" class="w-full h-full object-cover">`;
+            }
+            return `<i class="fas fa-user text-gray-400 text-xs"></i>`;
+        }
+
+        // Mesaj gönderme
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const messageText = messageInput.value.trim();
+            
+            if (messageText === '') return;
+            
+            // Mesaj ID'sini artır
+            appState.lastMessageId++;
+            
+            // Yeni mesaj oluştur
+            const newMessage = {
+                id: appState.lastMessageId,
+                user: appState.currentUser.username,
+                text: messageText,
+                time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+                rank: appState.currentUser.rank,
+                pinned: false
+            };
+            
+            // Mesajı state'e ekle
+            if (!appState.messages[appState.currentChannel]) {
+                appState.messages[appState.currentChannel] = [];
+            }
+            
+            appState.messages[appState.currentChannel].push(newMessage);
+            saveMessagesToStorage();
+            
+            // Mesajı sohbete ekle
+            addMessageToChat(newMessage, true);
+            
+            // Input'u temizle
+            messageInput.value = '';
+            
+            // En son mesaja kaydır
+            const chatContainer = document.getElementById('chatMessages');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Mesajı sohbete ekle
+        function addMessageToChat(message, isSelf) {
+            const chatContainer = document.getElementById('chatMessages');
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = `flex items-start ${isSelf ? 'justify-end' : ''} message-item`;
+            messageElement.setAttribute('data-message-id', message.id);
+            
+            messageElement.innerHTML = `
+                ${!isSelf ? `
+                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mr-3">
+                    ${getUserAvatar(message.user)}
+                </div>
+                ` : ''}
+                
+                <div class="${isSelf ? 'flex flex-col items-end' : ''}">
+                    <div class="flex items-baseline">
+                        ${!isSelf ? `<span class="font-medium text-sm">${message.user}</span>` : ''}
+                        <span class="text-xs text-gray-500 ${isSelf ? 'mr-2' : 'ml-2'}">${message.time}</span>
+                        ${isSelf ? `<span class="font-medium text-sm">${message.user}</span>` : ''}
+                    </div>
+                    <div class="${isSelf ? 'message-self' : 'message-other'} p-3 mt-1 max-w-xs md:max-w-md">
+                        <p class="text-sm">${message.text}</p>
+                    </div>
+                </div>
+                
+                ${isSelf ? `
+                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden ml-3">
+                    ${getUserAvatar(message.user)}
+                </div>
+                ` : ''}
+            `;
+            
+            chatContainer.appendChild(messageElement);
+        }
+
+        // Mesajı sabitleme/çözme
+        function togglePinMessage(messageId) {
+            const channel = appState.currentChannel;
+            let messageFound = false;
+            
+            // Tüm kanallarda mesajı ara
+            for (const ch of appState.channels) {
+                if (appState.messages[ch]) {
+                    const messageIndex = appState.messages[ch].findIndex(m => m.id === parseInt(messageId));
+                    if (messageIndex !== -1) {
+                        const message = appState.messages[ch][messageIndex];
+                        messageFound = true;
+                        
+                        // Sabitlenmiş mesajlar listesini başlat
+                        if (!appState.pinnedMessages[channel]) {
+                            appState.pinnedMessages[channel] = [];
+                        }
+                        
+                        if (message.pinned) {
+                            // Mesajı sabitlemeden çıkar
+                            message.pinned = false;
+                            appState.pinnedMessages[channel] = appState.pinnedMessages[channel].filter(m => m.id !== parseInt(messageId));
+                        } else {
+                            // Mesajı sabitle
+                            message.pinned = true;
+                            appState.pinnedMessages[channel].push(message);
+                        }
+                        
+                        break;
+                    }
+                }
+            }
+            
+            if (messageFound) {
+                saveMessagesToStorage();
+                loadChannel(channel);
+                
+                // Context menu'yu kapat
+                document.getElementById('contextMenu').style.display = 'none';
+            }
+        }
+
+        // Mesaj silme
+        function deleteMessage(messageId) {
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: 'Bu mesajı silmek istediğinize emin misiniz?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Evet, sil!',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const channel = appState.currentChannel;
+                    
+                    // Mesajı normal listeden sil
+                    if (appState.messages[channel]) {
+                        appState.messages[channel] = appState.messages[channel].filter(m => m.id !== parseInt(messageId));
+                    }
+                    
+                    // Mesajı sabitlenmiş listeden de sil
+                    if (appState.pinnedMessages[channel]) {
+                        appState.pinnedMessages[channel] = appState.pinnedMessages[channel].filter(m => m.id !== parseInt(messageId));
+                    }
+                    
+                    saveMessagesToStorage();
+                    loadChannel(channel);
+                    
+                    // Context menu'yu kapat
+                    document.getElementById('contextMenu').style.display = 'none';
+                    
+                    Swal.fire(
+                        'Silindi!',
+                        'Mesaj başarıyla silindi.',
+                        'success'
+                    );
+                }
+            });
+        }
+
+        // Kullanıcı görevlerini yükle
+        function loadUserTasks() {
+            const tasksContainer = document.getElementById('userTasks');
+            tasksContainer.innerHTML = '';
+            
+            // Basit görev örnekleri
+            const tasks = [
+                {
+                    title: 'Haftalık Rapor',
+                    status: 'Devam Ediyor',
+                    due: 'Yarın',
+                    color: 'yellow'
+                },
+                {
+                    title: 'Etkinlik Değerlendirme',
+                    status: 'Yeni',
+                    due: '3 gün',
+                    color: 'blue'
+                }
+            ];
+            
+            // Eğer moderatör veya adminse ek görevler
+            if (appState.currentUser.rank === 'Mod' || appState.currentUser.rank === 'Admin') {
+                tasks.push({
+                    title: 'Şikayetleri İncele',
+                    status: 'Beklemede',
+                    due: 'Bugün',
+                    color: 'red'
+                });
+            }
+            
+            // Görevleri ekle
+            tasks.forEach(task => {
+                const taskElement = document.createElement('div');
+                taskElement.className = 'bg-white p-2 rounded border-l-4 shadow-sm';
+                taskElement.classList.add(`border-${task.color}-500`);
+                
+                taskElement.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium">${task.title}</span>
+                        <span class="text-xs bg-${task.color}-100 text-${task.color}-800 px-2 py-0.5 rounded-full">${task.status}</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Son teslim: ${task.due}</p>
+                `;
+                
+                tasksContainer.appendChild(taskElement);
+            });
+        }
+
+        // Periyodik olarak çevrimiçi kullanıcıları güncelle
+        setInterval(updateOnlineUsers, 30000);
+    </script>
+</body>
+</html>
